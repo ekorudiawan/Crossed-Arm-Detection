@@ -114,11 +114,13 @@ def main():
     img_max = 59
     img_min = 53
     template = np.zeros((5,5))
+    alg = cv.createGeneralizedHoughBallard()
     start_detect = False
     detect_s = None
     while True:
-        filename = '\\images\\images'+str(img_number)+'.png'
-        file_location = os.getcwd() + filename
+        filename = '/home/images/images'+str(img_number)+'.png'
+        file_location = filename
+        # print(file_location)
         rgb_img = cv.imread(file_location)
         gray_img = cv.cvtColor(rgb_img, cv.COLOR_BGR2GRAY)
         blur_img = cv.GaussianBlur(gray_img, (5, 5), 0)
@@ -147,6 +149,7 @@ def main():
         # Save template
         elif key == ord('t'):
             template = canny[top_y:bot_y,top_x:bot_x]
+            alg.setTemplate(template)
             # row, col = template.shape
             # cx = col // 2
             # cy = row // 2

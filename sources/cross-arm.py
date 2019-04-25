@@ -5,107 +5,43 @@ import math
 from collections import defaultdict
 
 click_count = 0
-top_x = 0
-top_y = 0
-bot_x = 0
-bot_y = 0
+
+temp_tx = 0
+temp_ty = 0
+temp_bx = 0
+temp_by = 0
+mouse_x = 0
+mouse_y = 0
+
+first_click = False
+second_click = False
 
 MIN_CANNY_THRESHOLD = 0
 MAX_CANNY_THRESHOLD = 255
 
 def click_event(event, x, y, flags, param):
     if event == cv.EVENT_LBUTTONDOWN:
-        global click_count, top_x, top_y, bot_x, bot_y
+        global click_count, temp_tx, temp_ty, temp_bx, temp_by
+        global first_click, second_click
         if click_count == 0:
-            top_x = x
-            top_y = y
-            print("First ROI", top_x, top_y)
+            temp_tx = x
+            temp_ty = y
+            print("First ROI", temp_tx, temp_ty)
             click_count += 1
+            first_click = True
+            second_click = False
         elif click_count == 1:
-            bot_x = x
-            bot_y = y
-            print("Second ROI", bot_x, bot_y)
+            temp_bx = x
+            temp_by = y
+            print("Second ROI", temp_bx, temp_by)
             click_count = 0
-
-def gradient_orientation(image):
-    '''
-    Calculate the gradient orientation for edge point in the image
-    '''
-    # dx = sobel(image, axis=0, mode='constant')
-    # dy = sobel(image, axis=1, mode='constant')
-    dx = cv.Sobel(image, cv.CV_64F, 1,0, ksize=5)
-    dy = cv.Sobel(image, cv.CV_64F, 0,1, ksize=5)
-    gradient = np.arctan2(dy,dx) * 180 / np.pi
-
-    return gradient
-
-def build_r_table(image, origin):
-    '''
-    Build the R-table from the given shape image and a reference point
-    '''
-    edges = cv.Canny(image, MIN_CANNY_THRESHOLD, MAX_CANNY_THRESHOLD) 
-    gradient = gradient_orientation(edges)
-    
-    r_table = defaultdict(list)
-    for (i,j),value in np.ndenumerate(edges):
-        if value:
-            r_table[gradient[i,j]].append((origin[0]-i, origin[1]-j))
-
-    return r_table
-
-def accumulate_gradients(r_table, grayImage):
-    '''
-    Perform a General Hough Transform with the given image and R-table
-    '''
-    edges = cv.Canny(grayImage, MIN_CANNY_THRESHOLD, MAX_CANNY_THRESHOLD)
-    gradient = gradient_orientation(edges)
-    
-    accumulator = np.zeros(grayImage.shape)
-    # print("acc shape", accumulator.shape)
-    for (i,j),value in np.ndenumerate(edges):
-        if value:
-            for r in r_table[gradient[i,j]]:
-                accum_i, accum_j = i+r[0], j+r[1]
-                
-                if accum_i >= 0 and accum_i < accumulator.shape[0] and accum_j >= 0 and accum_j < accumulator.shape[1]:
-                    # print("accum ", accum_i, accum_j)
-                    accumulator[int(accum_i), int(accum_j)] += 1
-                    
-    return accumulator
-
-def general_hough_closure(reference_image):
-    '''
-    Generator function to create a closure with the reference image and origin
-    at the center of the reference image
-    
-    Returns a function f, which takes a query image and returns the accumulator
-    '''
-    referencePoint = (reference_image.shape[0]/2, reference_image.shape[1]/2)
-    r_table = build_r_table(reference_image, referencePoint)
-    
-    def f(query_image):
-        return accumulate_gradients(r_table, query_image)
-        
-    return f
-
-def n_max(a, n):
-    '''
-    Return the N max elements and indices in a
-    '''
-    indices = a.ravel().argsort()[-n:]
-    indices = (np.unravel_index(i, a.shape) for i in indices)
-    return [(a[i], i) for i in indices]
-
-def test_general_hough(gh, reference_image, query_image):
-    accumulator = gh(query_image)
-    m = n_max(accumulator, 5)
-    print("m", m)
-    max_prob = [prob[0] for prob in m]
-    y_points = [pt[1][0] for pt in m]
-    x_points = [pt[1][1] for pt in m] 
-    i, j = np.unravel_index(accumulator.argmax(), accumulator.shape)   
-    print("max ", max_prob)
-    return x_points, y_points
+            first_click = False
+            second_click = True
+    elif event == cv.EVENT_MOUSEMOVE:
+        global mouse_x, mouse_y
+        # print("Mouse", mouse_x, mouse_y)
+        mouse_x = x
+        mouse_y = y
 
 def main():
     print("Arm Detection")
@@ -113,28 +49,100 @@ def main():
     img_number = 53
     img_max = 59
     img_min = 53
-    template = np.zeros((5,5))
+
+    # Load template image from file
+    rtop_temp_img = cv.imread('./temp_img/right_top.png', 0)
+    ltop_temp_img = cv.imread('./temp_img/left_top.png', 0)
+
     alg = cv.createGeneralizedHoughBallard()
-    start_detect = False
-    detect_s = None
+    start_detect = True
+
+    r_temp_w = 0
+    r_temp_h = 0
+
+    l_temp_w = 0
+    l_temp_h = 0
+
+    l_temp_h, l_temp_w = ltop_temp_img.shape
+    r_temp_h, r_temp_w = rtop_temp_img.shape
+
     while True:
         filename = '/home/images/images'+str(img_number)+'.png'
-        file_location = filename
-        # print(file_location)
-        rgb_img = cv.imread(file_location)
+
+        rgb_img = cv.imread(filename)
+        rgb_img = cv.resize(rgb_img,(640, 480), interpolation = cv.INTER_CUBIC)
         gray_img = cv.cvtColor(rgb_img, cv.COLOR_BGR2GRAY)
         blur_img = cv.GaussianBlur(gray_img, (5, 5), 0)
         canny = cv.Canny(blur_img, MIN_CANNY_THRESHOLD, MAX_CANNY_THRESHOLD)
+        rgb_canny = cv.cvtColor(canny, cv.COLOR_GRAY2BGR)
+
+        # Draw ROI
+        global mouse_x, mouse_y
+        global first_click, second_click
+        if first_click:
+            rgb_canny = cv.rectangle(rgb_canny, (temp_tx,temp_ty), (mouse_x,mouse_y), (0,0,127), 2)
+        elif second_click:
+            rgb_canny = cv.rectangle(rgb_canny, (temp_tx,temp_ty), (temp_bx,temp_by), (0,0,127), 2)
 
         if start_detect:
-            x_points, y_points = test_general_hough(detect_s, template, canny)
-            for i in range(len(x_points)):
-                rgb_img = cv.circle(rgb_img,(x_points[i],y_points[i]), 50, (0,0,255), 1)
+            left_detected = False
+            right_detected = False
+            detection_stage = ['right', 'left']
+            for detection in detection_stage:
+                if detection == 'right':
+                    alg.setTemplate(rtop_temp_img)
+                elif detection == 'left':
+                    alg.setTemplate(ltop_temp_img)
+
+                positions, votes = alg.detect(canny)
+                # print(positions)
+                if positions is not None:
+                    posx = positions[0][0][0]
+                    posy = positions[0][0][1]
+                    scale = positions[0][0][2]
+                    angle = positions[0][0][3]
+
+                    if detection == 'right':
+                        print("Right Temp Pos :", posx, posy)
+                    elif detection == 'left':
+                        print("Left Temp Pos :", posx, posy)
+
+                    print("Scale :", scale)
+                    print("Angle :", angle)
+
+                    roi_tx = int(posx - (r_temp_w//2))
+                    roi_ty = int(posy - (r_temp_h//2))
+                    roi_bx = int(posx + (r_temp_w//2))
+                    roi_by = int(posy + (r_temp_h//2))
+
+                    detected_color = (0, 0, 0)
+
+                    if detection == 'right':
+                        right_detected = True
+                        detected_color = (255, 0, 0)
+                    elif detection == 'left':
+                        left_detected = True
+                        detected_color = (0, 255, 0)
+
+                    rgb_img = cv.rectangle(rgb_img, (roi_tx,roi_ty), (roi_bx,roi_by), detected_color, 3)
+                    
+            if right_detected and not left_detected:
+                rgb_img = cv.putText(rgb_img,'Right Hand on Top', (10,50), cv.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv.LINE_AA)
+                print("Right Hand on Top")
+            elif not right_detected and left_detected:
+                rgb_img = cv.putText(rgb_img,'Left Hand on Top', (10,50), cv.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv.LINE_AA)
+                print("Left Hand on Top")
+            elif right_detected and left_detected:
+                print("Unable to Recognize, Both Detected")
+            else:
+                print("Unable to Recognize, No One Detected")
             
-        cv.imshow('Gray Image', canny)
+        cv.imshow('Gray Image', rgb_canny)
         cv.imshow('RGB Image', rgb_img)
-        cv.imshow('Template', template)
+        cv.imshow('Right Top Temp', rtop_temp_img)
+        cv.imshow('Left Top Temp', ltop_temp_img)
         cv.setMouseCallback('Gray Image', click_event)
+
         key = cv.waitKey(1)
         if key == ord('x'):
             break
@@ -146,15 +154,19 @@ def main():
             img_number -= 1
             if img_number < img_min:
                 img_number = img_max
-        # Save template
-        elif key == ord('t'):
-            template = canny[top_y:bot_y,top_x:bot_x]
-            alg.setTemplate(template)
-            # row, col = template.shape
-            # cx = col // 2
-            # cy = row // 2
-            # print("Center ", cx, cy)
-            detect_s = general_hough_closure(template)
+        # Press right to set template
+        elif key == ord('r'):
+            first_click = False
+            second_click = False
+            rtop_temp_img = canny[temp_ty:temp_by, temp_tx:temp_bx]
+            r_temp_h, r_temp_w = rtop_temp_img.shape
+            cv.imwrite("./temp_img/right_top.png", rtop_temp_img)
+        elif key == ord('l'):
+            first_click = False
+            second_click = False
+            ltop_temp_img = canny[temp_ty:temp_by, temp_tx:temp_bx]
+            l_temp_h, l_temp_w = ltop_temp_img.shape
+            cv.imwrite("./temp_img/left_top.png", ltop_temp_img)
         # Start matching
         elif key == ord('d'):
             start_detect = True

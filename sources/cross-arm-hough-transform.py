@@ -44,8 +44,9 @@ def click_event(event, x, y, flags, param):
         mouse_y = y
 
 def main():
-    print("Arm Detection")
+    print("Cross Arm Detection with Generalized Hough Transform")
     print(cv.__version__)
+    
     img_number = 1
     img_max = 626
     img_min = 1
@@ -55,8 +56,7 @@ def main():
     ltop_temp_img = cv.imread('./temp_img/left_top.png', 0)
 
     alg = cv.createGeneralizedHoughBallard()
-    # alg = cv.createGeneralizedHoughGuil()
-    start_detect = True
+    
 
     r_temp_w = 0
     r_temp_h = 0
@@ -66,53 +66,6 @@ def main():
 
     l_temp_h, l_temp_w = ltop_temp_img.shape
     r_temp_h, r_temp_w = rtop_temp_img.shape
-    # Get Guil Parameter
-    # print("Angle Epsilon : ", alg.getAngleEpsilon())
-    # print("Angle Step : ", alg.getAngleStep())
-    # print("Angle Thresh : ", alg.getAngleThresh())
-    # print("Levels : ", alg.getLevels())
-    # print("Max Angles : ", alg.getMaxAngle())
-    # print("Max Scales : ", alg.getMaxScale())
-    # print("Min Angles : ", alg.getMinAngle())
-    # print("Min Scales : ", alg.getMinScale())
-    # print("Pos Thresh : ", alg.getPosThresh())
-    # print("Scale Step : ", alg.getScaleStep())
-    # print("Scale Thresh : ", alg.getScaleThresh())
-    # print("Xi : ", alg.getXi())
-
-    # Get Ballard Parameter
-    # print("Angle Epsilon : ", alg.getAngleEpsilon())
-    # print("Angle Step : ", alg.getAngleStep())
-    # print("Angle Thresh : ", alg.getAngleThresh())
-    print("Levels : ", alg.getLevels())
-    print("Votes Threshold : ", alg.getVotesThreshold())
-    print("Minimum Distance : ", alg.getMinDist())
-    print("DP : ", alg.getDp())
-    print("Max Buffer : ", alg.getMaxBufferSize())
-    print("Votes Threshold : ", alg.getVotesThreshold())
-
-    # print("Max Angles : ", alg.getMaxAngle())
-    # print("Max Scales : ", alg.getMaxScale())
-    # print("Min Angles : ", alg.getMinAngle())
-    # print("Min Scales : ", alg.getMinScale())
-    # print("Pos Thresh : ", alg.getPosThresh())
-    # print("Scale Step : ", alg.getScaleStep())
-    # print("Scale Thresh : ", alg.getScaleThresh())
-    # print("Xi : ", alg.getXi())
-
-    # Set Guil Parameter
-    # alg.setAngleEpsilon()
-    # alg.setAngleStep(30)
-    # alg.setAngleThresh()
-    # alg.setLevels()
-    # alg.setMaxAngle(90)
-    # alg.setMaxScale(1.5)
-    # alg.setMinAngle()
-    # alg.setMinScale(0.5)
-    # alg.setPosThresh()
-    # alg.setScaleStep(0.5)
-    # alg.setScaleThresh()
-    # alg.setXi()
 
     # Set Ballard Parameter
     alg.setLevels(360)
@@ -120,39 +73,33 @@ def main():
     alg.setMinDist(100)
     alg.setDp(2)
     alg.setMaxBufferSize(1000)
-
-    print("Setup Done")
+    # Print Generalized Hough Parameter
+    print("Generalized Hough Transform Parameter")
+    print("Levels : ", alg.getLevels())
+    print("Votes Threshold : ", alg.getVotesThreshold())
+    print("Minimum Distance : ", alg.getMinDist())
+    print("DP : ", alg.getDp())
+    print("Max Buffer : ", alg.getMaxBufferSize())
+    print("Votes Threshold : ", alg.getVotesThreshold())
+    start_detect = True
     while True:
 
         filename = '/home/images/images ('+str(img_number)+').png'
 
         rgb_img = cv.imread(filename)
-        rgb_img = cv.resize(rgb_img,(640, 480), interpolation = cv.INTER_CUBIC)
-         
-        kernel_sharpening = np.array([[-1,-1,-1], 
-                              [-1, 9,-1],
-                              [-1,-1,-1]])
-        # rgb_img = cv.filter2D(rgb_img, -1, kernel_sharpening)
+        img_h, img_w, _ = rgb_img.shape
+        rgb_img = cv.resize(rgb_img,(img_w//2, img_h//2), interpolation = cv.INTER_CUBIC)
+        
         gray_img = cv.cvtColor(rgb_img, cv.COLOR_BGR2GRAY)
-        # blur_img = cv.GaussianBlur(gray_img, (5, 5), 0)
-        # blur_img = cv.bilateralFilter(gray_img,9,50,50)
-
-        # v = np.median(blur_img)
-        # sigma = 0.5
-        # lower_thresh = int(max(0, (1.0 - sigma) * v))
-        # upper_thresh = int(min(255, (1.0 + sigma) * v))
-        # MIN_CANNY_THRESHOLD = lower_thresh
-        # MAX_CANNY_THRESHOLD = upper_thresh
-        # canny = cv.Canny(blur_img, MIN_CANNY_THRESHOLD, MAX_CANNY_THRESHOLD)
-        rgb_canny = cv.cvtColor(gray_img, cv.COLOR_GRAY2BGR)
+        rgb_gray = cv.cvtColor(gray_img, cv.COLOR_GRAY2BGR)
 
         # Draw ROI
         global mouse_x, mouse_y
         global first_click, second_click
         if first_click:
-            rgb_canny = cv.rectangle(rgb_canny, (temp_tx,temp_ty), (mouse_x,mouse_y), (0,0,127), 2)
+            rgb_gray = cv.rectangle(rgb_gray, (temp_tx,temp_ty), (mouse_x,mouse_y), (0,0,127), 2)
         elif second_click:
-            rgb_canny = cv.rectangle(rgb_canny, (temp_tx,temp_ty), (temp_bx,temp_by), (0,0,127), 2)
+            rgb_gray = cv.rectangle(rgb_gray, (temp_tx,temp_ty), (temp_bx,temp_by), (0,0,127), 2)
 
         if start_detect:
             left_detected = False
@@ -167,8 +114,6 @@ def main():
                     alg.setTemplate(ltop_temp_img)
 
                 positions, votes = alg.detect(gray_img)
-                print("Pos ", detection, positions)
-                print("Votes ", detection, votes)
                 if positions is not None:
                     if detection == 'right':
                         right_votes = votes[0][0][0]
@@ -176,16 +121,7 @@ def main():
                         left_votes = votes[0][0][0]
                     posx = positions[0][0][0]
                     posy = positions[0][0][1]
-                    scale = positions[0][0][2]
-                    angle = positions[0][0][3]
 
-                    if detection == 'right':
-                        print("Right Temp Pos :", posx, posy)
-                    elif detection == 'left':
-                        print("Left Temp Pos :", posx, posy)
-
-                    print("Scale :", scale)
-                    print("Angle :", angle)
                     if detection == 'right' :
                         roi_tx = int(posx - (r_temp_w//2))
                         roi_ty = int(posy - (r_temp_h//2))
@@ -207,20 +143,27 @@ def main():
                         detected_color = (0, 255, 0)
 
                     rgb_img = cv.rectangle(rgb_img, (roi_tx,roi_ty), (roi_bx,roi_by), detected_color, 3)
-                    
+
+                print("Right on Top Votes : ", right_votes)
+                print("Left on Top Votes : ", left_votes)
+
             if right_votes > left_votes:
                 rgb_img = cv.putText(rgb_img,'Right Hand on Top', (10,50), cv.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv.LINE_AA)
-                print("Right Hand on Top")
+                print("Result >> Right Hand on Top")
             elif left_votes and right_votes:
                 rgb_img = cv.putText(rgb_img,'Left Hand on Top', (10,50), cv.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv.LINE_AA)
-                print("Left Hand on Top")
+                print("Result >> Left Hand on Top")
             else:
-                print("Unable to Recognize, No One Detected")
+                print("Result >> Unable to Recognize, No One Detected")
             
-        cv.imshow('Gray Image', rgb_canny)
+        cv.imshow('Gray Image', rgb_gray)
+        cv.moveWindow("Gray Image", 200, 200)
         cv.imshow('RGB Image', rgb_img)
+        cv.moveWindow("RGB Image", 1000, 200)
         cv.imshow('Right Top Temp', rtop_temp_img)
+        cv.moveWindow("Right Top Temp", 200, 700)
         cv.imshow('Left Top Temp', ltop_temp_img)
+        cv.moveWindow("Left Top Temp", 500, 700)
         cv.setMouseCallback('Gray Image', click_event)
 
         key = cv.waitKey(1)
@@ -234,19 +177,24 @@ def main():
             img_number -= 1
             if img_number < img_min:
                 img_number = img_max
-        # Press right to set template
+        # Press r to set right on top template
         elif key == ord('r'):
             first_click = False
             second_click = False
             rtop_temp_img = gray_img[temp_ty:temp_by, temp_tx:temp_bx]
             r_temp_h, r_temp_w = rtop_temp_img.shape
             cv.imwrite("./temp_img/right_top.png", rtop_temp_img)
+        # Press l to set left on top template
         elif key == ord('l'):
             first_click = False
             second_click = False
             ltop_temp_img = gray_img[temp_ty:temp_by, temp_tx:temp_bx]
             l_temp_h, l_temp_w = ltop_temp_img.shape
             cv.imwrite("./temp_img/left_top.png", ltop_temp_img)
+        # Press esc to cancel crop template
+        elif key == 27:
+            first_click = False
+            second_click = False
         # Start matching
         elif key == ord('d'):
             start_detect = True

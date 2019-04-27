@@ -46,7 +46,7 @@ def click_event(event, x, y, flags, param):
 def main():
     print("Cross Arm Detection with Generalized Hough Transform")
     print(cv.__version__)
-    
+
     img_number = 1
     img_max = 626
     img_min = 1
@@ -144,16 +144,17 @@ def main():
 
                     rgb_img = cv.rectangle(rgb_img, (roi_tx,roi_ty), (roi_bx,roi_by), detected_color, 3)
 
-                print("Right on Top Votes : ", right_votes)
-                print("Left on Top Votes : ", left_votes)
+            print("Right on Top Votes : ", right_votes)
+            print("Left on Top Votes : ", left_votes)
 
             if right_votes > left_votes:
                 rgb_img = cv.putText(rgb_img,'Right Hand on Top', (10,50), cv.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv.LINE_AA)
                 print("Result >> Right Hand on Top")
-            elif left_votes and right_votes:
+            elif left_votes > right_votes:
                 rgb_img = cv.putText(rgb_img,'Left Hand on Top', (10,50), cv.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv.LINE_AA)
                 print("Result >> Left Hand on Top")
             else:
+                rgb_img = cv.putText(rgb_img,'Unable to Recognize', (10,50), cv.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv.LINE_AA)
                 print("Result >> Unable to Recognize, No One Detected")
             
         cv.imshow('Gray Image', rgb_gray)

@@ -5,7 +5,7 @@ import os
 
 files = os.listdir("../videos")
 # print(files)
-cap = cv.VideoCapture('../videos/chico6-right.avi')
+cap = cv.VideoCapture('../videos/bob1-left.avi')
 
 # params for ShiTomasi corner detection
 feature_params = dict( maxCorners = 1000,
@@ -26,7 +26,7 @@ old_gray = cv.cvtColor(old_frame, cv.COLOR_BGR2GRAY)
 p0 = cv.goodFeaturesToTrack(old_gray, mask = None, **feature_params)
 
 # Select keypoint from bottom region only
-p0 = p0[p0[:,:,1] > (height//2)].reshape(-1,1,2)
+p0 = p0[p0[:,:,1] > (height//2 - 100)].reshape(-1,1,2)
 p_init = p0.copy()
 
 # Get Left Hand Keypoint Index
@@ -48,7 +48,7 @@ while True:
     if ret:
         frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
         # Draw boundary lines
-        frame = cv.line(frame, (0,height//2),(width,height//2), (255,0,0), 2)
+        frame = cv.line(frame, (0,height//2 - 100),(width,height//2 - 100), (255,0,0), 2)
         frame = cv.line(frame, (width//2,height),(width//2,0), (255,0,0), 2)
 
         # calculate optical flow
@@ -64,7 +64,7 @@ while True:
         if len(lost_idx) > 0:
             delete_num = lost_idx[:,0]
             p_init = np.delete(p_init, delete_num, axis=0)
-            p_init = p_init[p_init[:,:,1] > (height//2)].reshape(-1,1,2)
+            p_init = p_init[p_init[:,:,1] > (height//2 - 100)].reshape(-1,1,2)
             lh_idx = np.argwhere(p_init[:,:,0] > (width//2))
             lh_idx_num = list(lh_idx[:,0])
             rh_idx = np.argwhere(p_init[:,:,0] <= (width//2))
@@ -102,7 +102,7 @@ while True:
 
         img = cv.putText(img,'Frame ' + str(frame_num), (10,50), cv.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv.LINE_AA)
         cv.imshow('frame',img)
-        k = cv.waitKey(300) & 0xff
+        k = cv.waitKey(50) & 0xff
         if k == 27:
             break
             

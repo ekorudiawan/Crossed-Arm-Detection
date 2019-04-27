@@ -18,7 +18,7 @@ Running cross-arm-hough-transform.py will caused an error, because It needs modi
 
 #### Running with Docker Container
 
-To avoid some mistake, I create a Dockerfile of my environment. First step running with docker is building docker image for this docker file. To build the image just call docker_build.bat file from Windows terminal. Running program with Docker needs to install X11 Server in your computer. In Windows, I used https://sourceforge.net/projects/vcxsrv/
+To avoid some mistake, I create a Dockerfile of my environment. First step running with docker is building docker image for this docker file. To build the image just call docker_build.bat file from Windows terminal. Running program with Docker needs to install X-Server in your computer. In Windows, I used [VcXsrv](https://sourceforge.net/projects/vcxsrv/)
 
 ```
 docker_build.bat
@@ -36,3 +36,8 @@ When running with docker, by default program generalized hough transform will ru
 docker run -it --rm -e DISPLAY=10.0.75.1:0.0 ekorudiawan/python-opencv python ./sources/cross-arm-optical-flow.py
 ```
 
+#### Demo Videos
+
+Demo of this program can be seen in this link :
+1. [https://www.youtube.com/watch?v=Jiz0DU1QtuM](https://www.youtube.com/watch?v=Jiz0DU1QtuM) : Demo of Generalized Hough Transform
+2. [https://www.youtube.com/watch?v=efV0RyeZDnE](https://www.youtube.com/watch?v=efV0RyeZDnE) : Demo of Optical Flow

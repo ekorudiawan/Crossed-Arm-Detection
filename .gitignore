@@ -126,6 +126,6 @@ dmypy.json
 .vscode/
 
 # Images and video
-/images
-/videos
+# /images
+# /videos
 

@@ -62,4 +62,5 @@ RUN cd /home/opencv-${OPENCV_VERSION}/cmake_binary \
     && make -j8 install 
 RUN rm -rf /home/opencv-${OPENCV_VERSION} \
     rm -rf /home/opencv_contrib-${OPENCV_VERSION}
-CMD bash
+COPY . .
+CMD ["python","./sources/cross-arm-hough-transform.py"]

@@ -16,9 +16,6 @@ mouse_y = 0
 first_click = False
 second_click = False
 
-MIN_CANNY_THRESHOLD = 0
-MAX_CANNY_THRESHOLD = 5
-
 def click_event(event, x, y, flags, param):
     if event == cv.EVENT_LBUTTONDOWN:
         global click_count, temp_tx, temp_ty, temp_bx, temp_by
@@ -48,12 +45,12 @@ def main():
     print(cv.__version__)
 
     img_number = 1
-    img_max = 626
+    img_max = 10
     img_min = 1
 
     # Load template image from file
-    rtop_temp_img = cv.imread('./temp_img/right_top.png', 0)
-    ltop_temp_img = cv.imread('./temp_img/left_top.png', 0)
+    rtop_temp_img = cv.imread('./sources/temp_img/right_top.png', 0)
+    ltop_temp_img = cv.imread('./sources/temp_img/left_top.png', 0)
 
     alg = cv.createGeneralizedHoughBallard()
     
@@ -184,14 +181,14 @@ def main():
             second_click = False
             rtop_temp_img = gray_img[temp_ty:temp_by, temp_tx:temp_bx]
             r_temp_h, r_temp_w = rtop_temp_img.shape
-            cv.imwrite("./temp_img/right_top.png", rtop_temp_img)
+            cv.imwrite("./sources/temp_img/right_top.png", rtop_temp_img)
         # Press l to set left on top template
         elif key == ord('l'):
             first_click = False
             second_click = False
             ltop_temp_img = gray_img[temp_ty:temp_by, temp_tx:temp_bx]
             l_temp_h, l_temp_w = ltop_temp_img.shape
-            cv.imwrite("./temp_img/left_top.png", ltop_temp_img)
+            cv.imwrite("./sources/temp_img/left_top.png", ltop_temp_img)
         # Press esc to cancel crop template
         elif key == 27:
             first_click = False

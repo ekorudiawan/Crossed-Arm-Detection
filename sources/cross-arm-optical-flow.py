@@ -3,9 +3,9 @@ import cv2 as cv
 import scipy.spatial.distance as dist
 import os
 
-files = os.listdir("../videos")
+files = os.listdir("./videos")
 # print(files)
-cap = cv.VideoCapture('../videos/bob1-left.avi')
+cap = cv.VideoCapture('./videos/bob1-left.avi')
 
 # params for ShiTomasi corner detection
 feature_params = dict( maxCorners = 1000,

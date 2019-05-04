@@ -128,4 +128,5 @@ dmypy.json
 # Images and video
 # /images
 # /videos
+*.pdf
 

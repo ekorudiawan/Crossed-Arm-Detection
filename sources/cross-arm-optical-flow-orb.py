@@ -3,19 +3,11 @@ import cv2 as cv
 import scipy.spatial.distance as dist
 import os
 
-files = os.listdir("./videos")
-# print(files)
 cap = cv.VideoCapture('./videos/bob1-left.avi')
 
-# params for ShiTomasi corner detection
-feature_params = dict( maxCorners = 1000,
-                       qualityLevel = 0.2,
-                       minDistance = 7,
-                       blockSize = 7 )
-
 # Parameters for lucas kanade optical flow
-lk_params = dict( winSize  = (15,15),
-                  maxLevel = 2,
+lk_params = dict( winSize  = (100,100),
+                  maxLevel = 5,
                   criteria = (cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 0.03))
 
 # Take first frame and find corners in it
@@ -23,7 +15,11 @@ ret, old_frame = cap.read()
 height, width, _ = old_frame.shape
 old_gray = cv.cvtColor(old_frame, cv.COLOR_BGR2GRAY)
 
-p0 = cv.goodFeaturesToTrack(old_gray, mask = None, **feature_params)
+# ORB detector parameter
+detector = cv.ORB_create(1000)
+keypoints = detector.detect(old_frame)
+p0 = cv.KeyPoint_convert(keypoints)
+p0 = p0.reshape(-1,1,2)
 
 # Select keypoint from bottom region only
 p0 = p0[p0[:,:,1] > (height//2 - 100)].reshape(-1,1,2)
@@ -93,10 +89,24 @@ while True:
         # Estimating position of right and left hand by comparing which one in top 
         if detecting:
             min_val = np.argmin(good_new, axis=0)
-            if min_val[1] in lh_idx_num:
+            good_left = good_new[lh_idx_num,:]
+            good_right = good_new[rh_idx_num,:]
+            val_left, = np.where(good_left[:,0] <= (width//2))
+            val_right, = np.where(good_right[:,0] > (width//2))
+            if len(val_left) > 0:
+                min_val_left = np.amin(good_left[val_left], axis=0)
+            else:
+                min_val_left = np.array([0,height])
+
+            if len(val_right) > 0:
+                min_val_right = np.amin(good_right[val_right], axis=0)
+            else:
+                min_val_right = np.array([0,height])
+            
+            if min_val_left[1] < min_val_right[1]:
                 img = cv.putText(img,'Left Hand on Top', (10,100), cv.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv.LINE_AA)
                 print("Left Hand on Top")
-            elif min_val[1] in rh_idx_num:
+            elif min_val_right[1] <= min_val_left[1]:
                 img = cv.putText(img,'Right Hand on Top', (10,100), cv.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv.LINE_AA)
                 print("Right Hand on Top")
 
@@ -105,7 +115,7 @@ while True:
         k = cv.waitKey(50) & 0xff
         if k == 27:
             break
-            
+
         # Now update the previous frame and previous points
         old_gray = frame_gray.copy()
         p0 = good_new.reshape(-1,1,2)
